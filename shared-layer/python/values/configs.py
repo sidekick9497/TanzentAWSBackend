@@ -1,0 +1,2 @@
+LINES_TABLE_NAME = "LinesDB"
+LINES_PROPERTY_TABLE_NAME = "LineProperty"
