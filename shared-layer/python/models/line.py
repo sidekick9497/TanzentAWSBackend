@@ -6,17 +6,17 @@ class PrivateLines:
     contains the info about the text which is private, -1 denotes it is not shared with anyone
     """
 
-    def __init__(self, from_offset, length):
-        self.userIds = [-1]
+    def __init__(self, from_offset: int, length:int):
+        self.userIds = []
         self.from_offset = from_offset
         self.length = length
 
-    def add_user(self, user_id):
+    def add_user(self, user_id: str):
         if user_id in self.userIds:
             return
         self.userIds.append(user_id)
 
-    def remove_user(self, user_id):
+    def remove_user(self, user_id: str):
         if user_id not in self.userIds:
             return
         self.userIds.remove(user_id)
@@ -43,7 +43,6 @@ class Line:
     """
 
     def __init__(self, title, user_id, line_id, created_at, visibility, short_text):
-        self._properties = None
         self.user_id = user_id
         self.title = title
         self.line_id = line_id
@@ -53,7 +52,7 @@ class Line:
         self.properties = None
 
     def set_properties(self, properties: LineProperty):
-        self._properties = properties
+        self.properties = properties
 
     def get_properties(self) -> LineProperty:
         return self.properties

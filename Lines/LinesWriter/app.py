@@ -2,7 +2,7 @@ import json
 import logging
 import uuid
 
-from models import Line
+from models import Line, PrivateLines
 from models import LineProperty
 from utils import getDBConnection
 from values import configs
@@ -69,7 +69,7 @@ def lambda_handler(event, context):
             properties_object = request_body['lineProperties']
             content = properties_object['content']
             hide_one_read = properties_object['hideOnRead']
-            private_lines = properties_object['privateLines']
+            private_lines: PrivateLines = properties_object['privateLines']
             if line_id is None and line_id not in properties_object:
                 return {"statusCode": 400, "body": "Line_id should be present if only properties are passed"}
             if not is_line_present:

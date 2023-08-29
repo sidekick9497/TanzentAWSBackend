@@ -1,31 +1,24 @@
 import json
-import boto3
 
-from models import Line
+from boto3.dynamodb.conditions import Key
+
 from utils import getDBConnection
+from values import configs
 
 
 def lambda_handler(event, context):
     dynamodb = getDBConnection()
-    table_name = "LinesDB"
-    table = dynamodb.Table(table_name)
+    table = dynamodb.Table(configs.LINES_TABLE_NAME)
 
     try:
-        user_id = event["pathParameters"]["user_id"]
+        user_id = str(event["pathParameters"]["userId"])
+        print(user_id)
         # Scan all items from the table
-        response = table.query(
-            KeyConditionExpression="userId = :uid",
-            ExpressionAttributeValues={":uid": user_id}
-        )
+        response = table.query(KeyConditionExpression=Key('userId').eq(user_id)
+)
 
         # Extract the items from the response
         items = response["Items"]
-        my_lines = Line("hello world", "userId1")
-        print(my_lines.title)
-        # Print or process the items
-        for item in items:
-            print(item)  # Modify this line as needed
-
-        return {"statusCode": 200, "body": json.dumps(my_lines.title)}
+        return {"statusCode": 200, "body": json.dumps(items)}
     except Exception as e:
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
