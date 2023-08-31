@@ -51,6 +51,8 @@ def lambda_handler(event, context):
 
         if is_line_present:
             line = request_body['line']
+            print(line)
+            print("lineId" in line)
             title = line['title']
             user_id = line['userId']
             created_at = line['createdAt']
@@ -59,7 +61,10 @@ def lambda_handler(event, context):
                 short_text = line['shortText']
             else:
                 short_text = "short_text not present"
-            line_id = str(uuid.uuid4())
+            if "lineId" not in line:
+                line_id = str(uuid.uuid4())
+            else:
+                line_id = line['lineId']
             saved_line = Line(title, user_id, line_id, created_at, visibility, short_text)
             lines_table = dynamodb.Table(configs.LINES_TABLE_NAME)
             save_line_to_db(lines_table, saved_line)
