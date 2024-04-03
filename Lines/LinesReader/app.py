@@ -1,7 +1,7 @@
 import json
 
 from models import Line, LineProperty, PrivateLines
-from utils import getDBConnection
+from utils import getDBConnection, getUserIdFromToken
 from values import configs
 
 
@@ -12,16 +12,18 @@ def lambda_handler(event, context):
     lines_properties_db = dynamodb.Table(configs.LINES_PROPERTY_TABLE_NAME)
 
     try:
+        user_id = getUserIdFromToken(event)
+        #TODO: Add the access level check
+
         # Extract the path parameters from the url
         line_id = event["pathParameters"]["lineId"]
-        user_id = event["pathParameters"]["userId"]
-        if line_id is None or user_id is None:
-            return {"statusCode": 502, "body": "lineId or userId not found"}
+
+        if line_id is None:
+            return {"statusCode": 502, "body": "lineId not found"}
         # Get the line item from the DynamoDB
         lines_db_response = lines_db.get_item(
             Key={
-                'lineId': line_id,
-                'userId': user_id
+                "lineId": line_id
             }
         )
         # get the line properties from the DynamoDB
@@ -32,11 +34,12 @@ def lambda_handler(event, context):
         line_properties = lines_properties_db_response["Item"]
         private_lines = line_properties["privateLines"]
         content = line_properties["content"]
-        updated_content = hide_private_lines(content, private_lines, user_id)
+        updated_content = hide_private_lines(content, private_lines, 10)
         line_properties["content"] = updated_content
         response = {"line": line, "properties": line_properties}
         return {"statusCode": 200, "body": json.dumps(response)}
     except Exception as e:
+        print(e)
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
 
 

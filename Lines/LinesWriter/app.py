@@ -4,21 +4,22 @@ import uuid
 
 from models import Line, PrivateLines
 from models import LineProperty
-from utils import getDBConnection
+from utils import getDBConnection, getUserIdFromToken
 from values import configs
 
 logging.basicConfig(level=logging.INFO)
 
 
 def save_line_to_db(table, saved_line: Line):
-    logging.info("saving the lines to DB")
+    print("saving the lines to DB")
     table.put_item(
         Item={
             "lineId": saved_line.line_id,
             "title": saved_line.title,
-            "userId": saved_line.user_id,
-            "createdAt": saved_line.created_at,
-            "visibility": saved_line.visibility
+            "userId": str(saved_line.user_id),
+            "createdAt": str(saved_line.created_at),
+            "visibility": saved_line.visibility,
+            "shortText": saved_line.short_text
         }
     )
 
@@ -39,6 +40,8 @@ def lambda_handler(event, context):
     dynamodb = getDBConnection()
 
     try:
+
+
         line_id = None
         saved_line = None
         request_body = json.loads(event['body'])
@@ -54,7 +57,7 @@ def lambda_handler(event, context):
             print(line)
             print("lineId" in line)
             title = line['title']
-            user_id = line['userId']
+            user_id = getUserIdFromToken(event)
             created_at = line['createdAt']
             visibility = line['visibility']
             if 'shortText' in line:
@@ -66,8 +69,11 @@ def lambda_handler(event, context):
             else:
                 line_id = line['lineId']
             saved_line = Line(title, user_id, line_id, created_at, visibility, short_text)
+
             lines_table = dynamodb.Table(configs.LINES_TABLE_NAME)
             save_line_to_db(lines_table, saved_line)
+            print("savedLine")
+
 
         # Check if we have line_properties in the body and save it to the DB
         if is_properties_present:
@@ -83,7 +89,9 @@ def lambda_handler(event, context):
             line_properties: LineProperty = LineProperty(line_id, private_lines, content, hide_one_read)
             property_table = dynamodb.Table(configs.LINES_PROPERTY_TABLE_NAME)
             save_line_property_to_db(property_table, line_properties)
+            print("savedProperties")
 
         return {"statusCode": 200, "body": json.dumps(line_id)}
     except Exception as e:
+        print(e)
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
