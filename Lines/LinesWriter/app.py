@@ -64,7 +64,8 @@ def lambda_handler(event, context):
                 short_text = line['shortText']
             else:
                 short_text = "short_text not present"
-            if "lineId" not in line:
+            if "lineId" not in line or line['lineId'] is "":
+                print("lineId not present")
                 line_id = str(uuid.uuid4())
             else:
                 line_id = line['lineId']
