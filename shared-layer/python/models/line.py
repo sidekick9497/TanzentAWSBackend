@@ -42,13 +42,14 @@ class Line:
      Model class representing line entity, contains all the info including the property
     """
 
-    def __init__(self, title, user_id, line_id, created_at, visibility, short_text):
+    def __init__(self, title, user_id, line_id, created_at, visibility, short_text, shared_to: list = []):
         self.user_id = user_id
         self.title = title
         self.line_id = line_id
         self.created_at = created_at
         self.visibility = visibility
         self.short_text = short_text
+        self.shared_to = shared_to
         self.properties = None
 
     def set_properties(self, properties: LineProperty):

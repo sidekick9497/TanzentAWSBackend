@@ -34,8 +34,9 @@ def lambda_handler(event, context):
         line_properties = lines_properties_db_response["Item"]
         private_lines = line_properties["privateLines"]
         content = line_properties["content"]
-        updated_content = hide_private_lines(content, private_lines, 10)
-        line_properties["content"] = updated_content
+        ##TODO: disabled logic for hide_private_lines
+        ##updated_content = hide_private_lines(content, private_lines, 10)
+        line_properties["content"] = content;
         response = {"line": line, "properties": line_properties}
         return {"statusCode": 200, "body": json.dumps(response)}
     except Exception as e:

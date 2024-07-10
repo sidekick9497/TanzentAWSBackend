@@ -87,6 +87,22 @@ Resources:
           Properties:
             Path: /fetchCircles
             Method: post
+  LinesDeleterFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: LinesDeleter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        LinesDeleter:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /deleteLine/{lineId}
+            Method: delete
 
 
 Outputs:
@@ -118,5 +134,14 @@ Outputs:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt LinesWriterFunction.Arn
   LinesWriterIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt LinesReaderFunctionRole.Arn
+  LinesDeleterApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/deleteLine/{lineId}"
+  LinesDeleterFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt LinesDeleterFunction.Arn
+  LinesDeleterIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt LinesReaderFunctionRole.Arn

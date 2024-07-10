@@ -19,7 +19,8 @@ def save_line_to_db(table, saved_line: Line):
             "userId": str(saved_line.user_id),
             "createdAt": str(saved_line.created_at),
             "visibility": saved_line.visibility,
-            "shortText": saved_line.short_text
+            "shortText": saved_line.short_text,
+            "sharedTo": saved_line.shared_to
         }
     )
 
@@ -34,6 +35,11 @@ def save_line_property_to_db(table, properties: LineProperty):
             "privateLines": properties.private_lines
         }
     )
+
+
+def createStringListForDB(shared_to):
+    # create a list of maps with key as "S" and value iterated for shared_to list
+    return [{"S": x} for x in shared_to]
 
 
 def lambda_handler(event, context):
@@ -69,7 +75,11 @@ def lambda_handler(event, context):
                 line_id = str(uuid.uuid4())
             else:
                 line_id = line['lineId']
-            saved_line = Line(title, user_id, line_id, created_at, visibility, short_text)
+            shared_to = []
+            if "sharedTo" in line:
+                shared_to = (line['sharedTo'])
+                print("shared_to" + str(shared_to))
+            saved_line = Line(title, user_id, line_id, created_at, visibility, short_text, shared_to)
 
             lines_table = dynamodb.Table(configs.LINES_TABLE_NAME)
             save_line_to_db(lines_table, saved_line)

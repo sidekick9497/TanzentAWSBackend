@@ -23,6 +23,7 @@ def lambda_handler(event, context):
 
         # Extract the items from the response
         items = response["Items"]
+        print("Response all lines: ", items)
         return {"statusCode": 200, "body": json.dumps(items)}
     except Exception as e:
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
