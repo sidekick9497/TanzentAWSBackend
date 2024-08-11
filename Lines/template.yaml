@@ -103,6 +103,22 @@ Resources:
           Properties:
             Path: /deleteLine/{lineId}
             Method: delete
+  CircleUpdaterFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: CirclesUpdater/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        CircleUpdater:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /updateCircle
+            Method: put
 
 
 Outputs:
@@ -143,5 +159,14 @@ Outputs:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt LinesDeleterFunction.Arn
   LinesDeleterIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt LinesReaderFunctionRole.Arn
+  CirclesUpdaterApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateCircle"
+  CirclesUpdaterFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt CircleUpdaterFunction.Arn
+  CirclesUpdaterIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt LinesReaderFunctionRole.Arn

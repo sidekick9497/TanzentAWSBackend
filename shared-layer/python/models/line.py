@@ -27,14 +27,15 @@ class LineProperty:
         Contains the properties of one line
     """
 
-    def __init__(self, line_id, private_lines: PrivateLines, content, hide_on_read):
+    def __init__(self, line_id, content, hide_on_read, delete_on_read=False, read_by=[],
+                 contains_private_lines=False):
         self.line_id = line_id
-        self.private_lines: PrivateLines = private_lines
         self.content = content
         self.hide_on_read = hide_on_read
         # Not implemented, setting the property defaults
         self.read_by = []
-        self.delete_on_read = False
+        self.delete_on_read = delete_on_read
+        self.contains_private_lines: bool = contains_private_lines
 
 
 class Line:

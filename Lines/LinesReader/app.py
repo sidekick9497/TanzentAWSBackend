@@ -26,17 +26,20 @@ def lambda_handler(event, context):
                 "lineId": line_id
             }
         )
+        #TODO: Add access level check to see if the user has access to the line
+
         # get the line properties from the DynamoDB
         lines_properties_db_response = lines_properties_db.get_item(Key={
             "lineId": line_id
         })
         line: Line = lines_db_response["Item"]
+        print("Line: ", line)
         line_properties = lines_properties_db_response["Item"]
-        private_lines = line_properties["privateLines"]
+        print("Line properties: ", line_properties)
         content = line_properties["content"]
-        ##TODO: disabled logic for hide_private_lines
-        ##updated_content = hide_private_lines(content, private_lines, 10)
-        line_properties["content"] = content;
+        updated_content = hide_private_lines(content, line_properties['containsPrivateLines'], user_id, line["userId"])
+        print("Updated content: ", updated_content)
+        line_properties["content"] = updated_content
         response = {"line": line, "properties": line_properties}
         return {"statusCode": 200, "body": json.dumps(response)}
     except Exception as e:
@@ -44,15 +47,29 @@ def lambda_handler(event, context):
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
 
 
-def hide_private_lines(content, private_lines, user_id):
-    for private_line in private_lines:
-        if user_id not in private_line["userIds"]:
-            length = int(private_line["length"])
-            from_offset = int(private_line["fromOffset"])
-            replacement_string = "*" * length
-            content = (
-                    content[:from_offset]
-                    + replacement_string
-                    + content[from_offset + length:]
-            )
+def hide_private_lines(content, has_private_lines, requester_id, line_owner_id):
+    print("requester_id: ", requester_id, "line_owner_id: ", line_owner_id)
+    if requester_id == line_owner_id:
+        return content
+    print("Has private lines: ", has_private_lines)
+    if has_private_lines:
+        # Read the JSON data into a Python object
+        content_data = json.loads(content)
+
+        # Iterate through the list of content items
+        for item in content_data:
+            # Check if the 'privateLineSelector' attribute is set to True
+            if 'attributes' in item and item['attributes'].get('privateLineSelector'):
+                # TODO: Implement the access level check for the user here
+                # For now, let's assume the user does not have access
+                has_access = False  # Replace with actual access check logic
+
+                # Replace content with 'xxxx' if the user does not have access
+                if not has_access:
+                    item['insert'] = 'x' * len(item['insert'])
+
+        # Convert the modified content back to JSON
+        content = json.dumps(content_data)
+
     return content
+

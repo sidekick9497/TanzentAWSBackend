@@ -2,7 +2,7 @@ import json
 import logging
 import uuid
 
-from models import Line, PrivateLines
+from models import Line
 from models import LineProperty
 from utils import getDBConnection, getUserIdFromToken
 from values import configs
@@ -32,7 +32,9 @@ def save_line_property_to_db(table, properties: LineProperty):
             "lineId": properties.line_id,
             "content": properties.content,
             "hideOnRead": properties.hide_on_read,
-            "privateLines": properties.private_lines
+            #TODO: Not implemented, setting the property defaults, "deleteOnRead": properties.delete_on_read,
+            # "readBy": properties.read_by
+            "containsPrivateLines": properties.contains_private_lines
         }
     )
 
@@ -70,7 +72,7 @@ def lambda_handler(event, context):
                 short_text = line['shortText']
             else:
                 short_text = "short_text not present"
-            if "lineId" not in line or line['lineId'] is "":
+            if "lineId" not in line or line['lineId'] == "":
                 print("lineId not present")
                 line_id = str(uuid.uuid4())
             else:
@@ -78,7 +80,7 @@ def lambda_handler(event, context):
             shared_to = []
             if "sharedTo" in line:
                 shared_to = (line['sharedTo'])
-                print("shared_to" + str(shared_to))
+                print("shared_to  : " + str(shared_to))
             saved_line = Line(title, user_id, line_id, created_at, visibility, short_text, shared_to)
 
             lines_table = dynamodb.Table(configs.LINES_TABLE_NAME)
@@ -90,17 +92,19 @@ def lambda_handler(event, context):
         if is_properties_present:
             properties_object = request_body['lineProperties']
             content = properties_object['content']
-            hide_one_read = properties_object['hideOnRead']
-            private_lines: PrivateLines = properties_object['privateLines']
+            hide_on_read = properties_object['hideOnRead']
+            delete_on_read = properties_object['deleteOnRead']
+            contains_private_lines = properties_object['containsPrivateLines']
             if line_id is None and line_id not in properties_object:
                 return {"statusCode": 400, "body": "Line_id should be present if only properties are passed"}
             if not is_line_present:
                 line_id = properties_object['lineId']
             print("LineId created from UUID" + str(line_id))
-            line_properties: LineProperty = LineProperty(line_id, private_lines, content, hide_one_read)
+            line_properties: LineProperty = LineProperty(line_id, content, hide_on_read, delete_on_read, [],
+                                                         contains_private_lines)
             property_table = dynamodb.Table(configs.LINES_PROPERTY_TABLE_NAME)
             save_line_property_to_db(property_table, line_properties)
-            print("savedProperties")
+            print("savedProperties: ", str(line_properties))
 
         return {"statusCode": 200, "body": json.dumps(line_id)}
     except Exception as e:

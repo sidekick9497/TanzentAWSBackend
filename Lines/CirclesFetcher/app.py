@@ -28,6 +28,9 @@ def lambda_handler(event, context):
             if "Item" in response:
                 results.append(response['Item'])
         print("Results from DB:", results)
+        if (len(results) == 0):
+            return {"statusCode": 404, "body": json.dumps("Circles not found with Id " + str(circle_ids))}
+
     except Exception as e:
         print(e)
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
