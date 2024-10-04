@@ -2,7 +2,7 @@ import json
 
 from boto3.dynamodb.conditions import Key, Attr
 
-from utils import getDBConnection, getUserIdFromToken
+from utils import getDBConnection, getUserId
 from values import configs
 
 
@@ -13,7 +13,7 @@ def lambda_handler(event, context):
     try:
         user_id_to_fetch = event["pathParameters"]["userId"]
         print(user_id_to_fetch)
-        requested_user_id = getUserIdFromToken(event)
+        requested_user_id = getUserId(event)
         print(requested_user_id)
         print(user_id_to_fetch)
         print("Self user request", user_id_to_fetch)

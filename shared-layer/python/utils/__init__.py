@@ -1,2 +1,2 @@
 from utils.dynamoDBUtils import getDBConnection
-from utils.AuthenticationUtils import getUserIdFromToken
+from utils.AuthenticationUtils import getUserId

@@ -1,3 +1,5 @@
+import os
+
 
 def validate_token(event):
     # Try to extract the Authorization header
@@ -8,13 +10,20 @@ def validate_token(event):
     return False
 
 
-def getUserIdFromToken(event):
-    if not validate_token(event):
+def getUserId(event):
+    if os.environ.get("AWS_SAM_LOCAL"):
+        token = event.get('headers', {}).get('Authorization')
+        if token:
+            if token.startswith("Bearer "):
+                token = token[7:]
+            return token
         return None
+    claims = event['requestContext']['authorizer']['claims']
+    # Extract the phone number from the claims
+    phone_number = claims.get('phone_number', None)
+    return phone_number
 
-    token = event.get('headers', {}).get('Authorization')
-    if token:
-        if token.startswith("Bearer "):
-            token = token[7:]
-        return token
-    return None
+
+
+
+

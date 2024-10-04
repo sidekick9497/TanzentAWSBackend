@@ -1,7 +1,7 @@
 import json
 import logging
 from models import Line, PrivateLines, LineProperty
-from utils import getDBConnection, getUserIdFromToken
+from utils import getDBConnection, getUserId
 from values import configs
 
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +21,7 @@ def lambda_handler(event, context):
         if "pathParameters" not in event or "lineId" not in event["pathParameters"]:
             logging.error("Missing lineId in path parameters")
             return {"statusCode": 400, "body": json.dumps({"message": "Missing lineId in path parameters"})}
-
+        user_id = getUserId(event)
         line_id = event["pathParameters"]["lineId"]
         logging.info(f"{line_id} is sent for deletion")
 
@@ -33,6 +33,7 @@ def lambda_handler(event, context):
             logging.warning(f"Line with lineId {line_id} not found")
             return {"statusCode": 404, "body": json.dumps({"message": "Line not found"})}
 
+        #TODO: The line should belong to the current user first before deleting
         # Attempt to delete the item
         table.delete_item(Key={"lineId": line_id})
         logging.info(f"Line with lineId {line_id} successfully deleted")

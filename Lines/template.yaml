@@ -1,11 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  LinesReader
+  Template for Tanzent backend application
 
-  Sample SAM Template for LinesReader
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 10
@@ -23,150 +20,157 @@ Resources:
       LicenseInfo: MIT
       RetentionPolicy: Retain
 
+  LinesApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: arn:aws:cognito-idp:us-east-1:107207560024:userpool/us-east-1_bTOhp8YP9
+            IdentitySource: method.request.header.Authorization
+      TracingEnabled: false       # Disable tracing
+
   LinesReaderFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: LinesReader/
       Handler: app.lambda_handler
       Layers:
         - !Ref SharedCodeLayer
       Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
       Events:
         LinesReader:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /line/{lineId}
             Method: get
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   LinesReaderAllFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: LinesReaderAll/
       Handler: app.lambda_handler
       Layers:
         - !Ref SharedCodeLayer
       Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
       Events:
         LinesReaderAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /allLines/{userId}
             Method: get
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   LinesWriterFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: LinesWriter/
       Handler: app.lambda_handler
       Layers:
         - !Ref SharedCodeLayer
       Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
       Events:
         LinesWriter:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /writer
             Method: post
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   CirclesFetcherFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: CirclesFetcher/
       Handler: app.lambda_handler
       Layers:
         - !Ref SharedCodeLayer
       Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
       Events:
         CirclesFetcher:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /fetchCircles
             Method: post
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   LinesDeleterFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: LinesDeleter/
       Handler: app.lambda_handler
       Layers:
         - !Ref SharedCodeLayer
       Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
       Events:
         LinesDeleter:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /deleteLine/{lineId}
             Method: delete
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   CircleUpdaterFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: CirclesUpdater/
       Handler: app.lambda_handler
       Layers:
         - !Ref SharedCodeLayer
       Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
       Events:
         CircleUpdater:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api
           Properties:
             Path: /updateCircle
             Method: put
-
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   LinesReaderApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod//user/{userId}/line/{lineId}"
-  LinesReaderFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt LinesReaderFunction.Arn
-  LinesReaderIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt LinesReaderFunctionRole.Arn
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/line/{lineId}"
   LinesReaderAllApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/all/"
-  LinesReaderAllFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt LinesReaderAllFunction.Arn
-  LinesReaderAllIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt LinesReaderFunctionRole.Arn
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/allLines/{userId}"
   LinesWriterApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/writer/"
-  LinesWriterFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt LinesWriterFunction.Arn
-  LinesWriterIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt LinesReaderFunctionRole.Arn
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/writer"
   LinesDeleterApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/deleteLine/{lineId}"
-  LinesDeleterFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt LinesDeleterFunction.Arn
-  LinesDeleterIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt LinesReaderFunctionRole.Arn
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/deleteLine/{lineId}"
   CirclesUpdaterApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateCircle"
-  CirclesUpdaterFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt CircleUpdaterFunction.Arn
-  CirclesUpdaterIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt LinesReaderFunctionRole.Arn
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateCircle"

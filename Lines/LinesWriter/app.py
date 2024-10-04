@@ -4,7 +4,7 @@ import uuid
 
 from models import Line
 from models import LineProperty
-from utils import getDBConnection, getUserIdFromToken
+from utils import getDBConnection, getUserId
 from values import configs
 
 logging.basicConfig(level=logging.INFO)
@@ -65,7 +65,7 @@ def lambda_handler(event, context):
             print(line)
             print("lineId" in line)
             title = line['title']
-            user_id = getUserIdFromToken(event)
+            user_id = getUserId(event)
             created_at = line['createdAt']
             visibility = line['visibility']
             if 'shortText' in line:

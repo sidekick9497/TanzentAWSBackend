@@ -1,6 +1,6 @@
 import json
 import boto3
-from utils import getDBConnection, getUserIdFromToken
+from utils import getDBConnection, getUserId
 from values import configs
 
 

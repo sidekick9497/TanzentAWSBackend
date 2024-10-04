@@ -1,7 +1,7 @@
 import json
 
 from models import Line, LineProperty, PrivateLines
-from utils import getDBConnection, getUserIdFromToken
+from utils import getDBConnection, getUserId
 from values import configs
 
 
@@ -12,8 +12,7 @@ def lambda_handler(event, context):
     lines_properties_db = dynamodb.Table(configs.LINES_PROPERTY_TABLE_NAME)
 
     try:
-        user_id = getUserIdFromToken(event)
-        #TODO: Add the access level check
+        user_id = getUserId(event)
 
         # Extract the path parameters from the url
         line_id = event["pathParameters"]["lineId"]
@@ -26,7 +25,7 @@ def lambda_handler(event, context):
                 "lineId": line_id
             }
         )
-        #TODO: Add access level check to see if the user has access to the line
+        # TODO: Add access level check to see if the user has access to the line
 
         # get the line properties from the DynamoDB
         lines_properties_db_response = lines_properties_db.get_item(Key={
@@ -60,16 +59,19 @@ def hide_private_lines(content, has_private_lines, requester_id, line_owner_id):
         for item in content_data:
             # Check if the 'privateLineSelector' attribute is set to True
             if 'attributes' in item and item['attributes'].get('privateLineSelector'):
-                # TODO: Implement the access level check for the user here
-                # For now, let's assume the user does not have access
-                has_access = False  # Replace with actual access check logic
+                has_access = False
+                if 'privateLine' in item['attributes']:
+                    print("Private lines: ", item['attributes']['privateLine'])
+                    has_access = requester_id in item['attributes']['privateLine']
 
                 # Replace content with 'xxxx' if the user does not have access
                 if not has_access:
                     item['insert'] = 'x' * len(item['insert'])
+                #We need to remove the privateLine attribute if user doesn't has access
+                if not has_access:
+                    del item['attributes']['privateLine']
 
         # Convert the modified content back to JSON
         content = json.dumps(content_data)
 
     return content
-

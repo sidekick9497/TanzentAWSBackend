@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  LinesReader
+
+  Sample SAM Template for LinesReader
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+
+Resources:
+  SharedCodeLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: codeLayer
+      Description: share code layer to be used for all Lines lambda functions
+      ContentUri: ../shared-layer/
+      CompatibleRuntimes:
+        - python3.9
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
+
+  LinesReaderFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: LinesReader/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        LinesReader:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /line/{lineId}
+            Method: get
+  LinesReaderAllFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: LinesReaderAll/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        LinesReaderAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /allLines/{userId}
+            Method: get
+  LinesWriterFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: LinesWriter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        LinesWriter:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /writer
+            Method: post
+  CirclesFetcherFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: CirclesFetcher/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        CirclesFetcher:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /fetchCircles
+            Method: post
+  LinesDeleterFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: LinesDeleter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        LinesDeleter:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /deleteLine/{lineId}
+            Method: delete
+  CircleUpdaterFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: CirclesUpdater/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        CircleUpdater:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /updateCircle
+            Method: put
+
+
+Outputs:

@@ -1,6 +1,6 @@
 import json
 import boto3
-from utils import getDBConnection, getUserIdFromToken
+from utils import getDBConnection, getUserId
 from values import configs
 
 
@@ -15,10 +15,9 @@ def lambda_handler(event, context):
     circle_name = circle['circleName']
     circle_quote = circle['quote']
     circle_display_picture = circle['displayPicture']
-    circle_id = getUserIdFromToken(event)
+    circle_id = getUserId(event)
 
     print("Data received: ", circle_id, circle_name, circle_quote, circle_display_picture)
-    # Preparing the request items for the BatchGetItem call
     try:
         response = circleDb.put_item(
             Item={
