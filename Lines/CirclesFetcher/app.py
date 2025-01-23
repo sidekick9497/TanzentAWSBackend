@@ -1,6 +1,9 @@
 import json
+from _decimal import Decimal
+
 import boto3
 from utils import getDBConnection, getUserId
+from utils.dynamoDBUtils import DecimalEncoder
 from values import configs
 
 
@@ -12,29 +15,35 @@ def lambda_handler(event, context):
     payload = json.loads(event['body'])
     # Get the list of ids from circles key
     circle_ids = payload['circles']
-    print("Circles Ids passed",circle_ids)
+    print("Circles Ids passed", circle_ids)
 
-    # Preparing the request items for the BatchGetItem call
-    try:
-        results = []
-        for circle_id in circle_ids:
-            response = circleDb.get_item(
-                Key={
-                    "circleId": circle_id
-                }
-            )
-            print("Response is : ", response)
-            #TODO: Remove the contacts object from either the response or the item
-            if "Item" in response:
-                results.append(response['Item'])
-        print("Results from DB:", results)
-        if (len(results) == 0):
-            return {"statusCode": 404, "body": json.dumps("Circles not found with Id " + str(circle_ids))}
+    # Split the circle_ids into chunks of 100 or less
+    chunk_size = 100
+    chunks = [circle_ids[i:i + chunk_size] for i in range(0, len(circle_ids), chunk_size)]
 
-    except Exception as e:
-        print(e)
-        return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
+    results = []
+    for chunk in chunks:
+        # Prepare the request items for the BatchGetItem call
+        request_items = {
+            circleDb.name: {
+                'Keys': [{'circleId': circle_id} for circle_id in chunk]
+            }
+        }
+
+        try:
+            response = dynamoDb.batch_get_item(RequestItems=request_items)
+            chunk_results = response['Responses'][circleDb.name]
+            results.extend(chunk_results)
+        except Exception as e:
+            print(e)
+            return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
+
+    if not results:
+        return {"statusCode": 404, "body": json.dumps("Circles not found with Id " + str(circle_ids))}
+
     return {
         "statusCode": 200,
-        "body": json.dumps(results)
+        "body": json.dumps(results, cls=DecimalEncoder)
     }
+
+

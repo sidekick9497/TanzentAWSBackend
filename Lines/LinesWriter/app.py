@@ -1,10 +1,12 @@
 import json
 import logging
 import uuid
+from datetime import time, datetime
 
 from models import Line
 from models import LineProperty
 from utils import getDBConnection, getUserId
+from utils.dynamoDBUtils import update_user_updated_at
 from values import configs
 
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +34,7 @@ def save_line_property_to_db(table, properties: LineProperty):
             "lineId": properties.line_id,
             "content": properties.content,
             "hideOnRead": properties.hide_on_read,
-            #TODO: Not implemented, setting the property defaults, "deleteOnRead": properties.delete_on_read,
+            # TODO: Not implemented, setting the property defaults, "deleteOnRead": properties.delete_on_read,
             # "readBy": properties.read_by
             "containsPrivateLines": properties.contains_private_lines
         }
@@ -49,13 +51,13 @@ def lambda_handler(event, context):
 
     try:
 
-
         line_id = None
         saved_line = None
         request_body = json.loads(event['body'])
         print(request_body)
         is_line_present = 'line' in request_body
         is_properties_present = "lineProperties" in request_body
+        user_id = getUserId(event)
         if not is_line_present and not is_properties_present:
             logging.warning("invalid request body in the passed event")
             return {"statusCode": 400, "body": "Invalid request body"}
@@ -65,7 +67,6 @@ def lambda_handler(event, context):
             print(line)
             print("lineId" in line)
             title = line['title']
-            user_id = getUserId(event)
             created_at = line['createdAt']
             visibility = line['visibility']
             if 'shortText' in line:
@@ -87,7 +88,6 @@ def lambda_handler(event, context):
             save_line_to_db(lines_table, saved_line)
             print("savedLine")
 
-
         # Check if we have line_properties in the body and save it to the DB
         if is_properties_present:
             properties_object = request_body['lineProperties']
@@ -105,6 +105,8 @@ def lambda_handler(event, context):
             property_table = dynamodb.Table(configs.LINES_PROPERTY_TABLE_NAME)
             save_line_property_to_db(property_table, line_properties)
             print("savedProperties: ", str(line_properties))
+
+        update_user_updated_at(user_id, int(datetime.utcnow().timestamp() * 1_000))
 
         return {"statusCode": 200, "body": json.dumps(line_id)}
     except Exception as e:

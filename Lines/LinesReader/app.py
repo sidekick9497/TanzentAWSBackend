@@ -2,6 +2,7 @@ import json
 
 from models import Line, LineProperty, PrivateLines
 from utils import getDBConnection, getUserId
+from utils.dynamoDBUtils import update_user_view_count
 from values import configs
 
 
@@ -10,6 +11,7 @@ def lambda_handler(event, context):
     dynamodb = getDBConnection()
     lines_db = dynamodb.Table(configs.LINES_TABLE_NAME)
     lines_properties_db = dynamodb.Table(configs.LINES_PROPERTY_TABLE_NAME)
+    circles_db = dynamodb.Table(configs.CIRCLES_TABLE_NAME)
 
     try:
         user_id = getUserId(event)
@@ -37,6 +39,8 @@ def lambda_handler(event, context):
         print("Line properties: ", line_properties)
         content = line_properties["content"]
         updated_content = hide_private_lines(content, line_properties['containsPrivateLines'], user_id, line["userId"])
+        if user_id != line["userId"]:
+            update_user_view_count(line["userId"])
         print("Updated content: ", updated_content)
         line_properties["content"] = updated_content
         response = {"line": line, "properties": line_properties}

@@ -1,7 +1,10 @@
 import json
 import logging
+from datetime import datetime
+
 from models import Line, PrivateLines, LineProperty
 from utils import getDBConnection, getUserId
+from utils.dynamoDBUtils import update_user_updated_at
 from values import configs
 
 logging.basicConfig(level=logging.INFO)
@@ -33,10 +36,13 @@ def lambda_handler(event, context):
             logging.warning(f"Line with lineId {line_id} not found")
             return {"statusCode": 404, "body": json.dumps({"message": "Line not found"})}
 
-        #TODO: The line should belong to the current user first before deleting
+        # TODO: The line should belong to the current user first before deleting
         # Attempt to delete the item
         table.delete_item(Key={"lineId": line_id})
         logging.info(f"Line with lineId {line_id} successfully deleted")
+        update_user_updated_at(user_id, int(datetime.utcnow().timestamp() * 1_000))
+
+        # Return a success response with the lineId
         return {"statusCode": 200, "body": json.dumps({line_id: "deleted"})}
 
     except Exception as e:

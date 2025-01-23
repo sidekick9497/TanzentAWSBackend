@@ -1,4 +1,6 @@
 import json
+from datetime import datetime
+
 import boto3
 from utils import getDBConnection, getUserId
 from values import configs
@@ -16,6 +18,9 @@ def lambda_handler(event, context):
     circle_quote = circle['quote']
     circle_display_picture = circle['displayPicture']
     circle_id = getUserId(event)
+    current_streak = circle['currentStreak']
+    longest_streak = circle['longestStreak']
+    updated_at = int(datetime.utcnow().timestamp() * 1_000)
 
     print("Data received: ", circle_id, circle_name, circle_quote, circle_display_picture)
     try:
@@ -24,7 +29,10 @@ def lambda_handler(event, context):
                 "circleId": circle_id,
                 "name": circle_name,
                 "quote": circle_quote,
-                "displayPicture": circle_display_picture
+                "displayPicture": circle_display_picture,
+                "updatedAt": updated_at,
+                'currentStreak': current_streak,
+                'longestStreak': longest_streak
             }
         )
         print("Response is : ", response)
@@ -33,5 +41,5 @@ def lambda_handler(event, context):
         return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
     return {
         "statusCode": 200,
-        "body": json.dumps({"response": "success"})
+        "body": json.dumps({"response": "success", "updatedAt": updated_at}),
     }

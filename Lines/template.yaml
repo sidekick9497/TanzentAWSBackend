@@ -158,6 +158,27 @@ Resources:
             Auth:
               Authorizer: CognitoAuthorizer
 
+  FetchUpdatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: FetchUpdates/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Events:
+        FetchUpdates:
+          Type: Api
+          Properties:
+            Path: /fetchUpdates
+            Method: post
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
 Outputs:
   LinesReaderApi:
     Description: "API Gateway endpoint URL for Prod stage"
