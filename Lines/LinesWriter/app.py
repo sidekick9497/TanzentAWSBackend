@@ -64,8 +64,6 @@ def lambda_handler(event, context):
 
         if is_line_present:
             line = request_body['line']
-            print(line)
-            print("lineId" in line)
             title = line['title']
             created_at = line['createdAt']
             visibility = line['visibility']

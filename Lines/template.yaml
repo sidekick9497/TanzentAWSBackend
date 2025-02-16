@@ -179,6 +179,67 @@ Resources:
             Auth:
               Authorizer: CognitoAuthorizer
 
+  HomeWidgetsFetcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HomeWidgetsFetcher/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Events:
+        HomeWidgetsFetcher:
+          Type: Api
+          Properties:
+            Path: /fetchHomeWidgets
+            Method: post
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+  HomeWidgetsUpdaterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HomeWidgetsUpdater/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Events:
+        HomeWidgetsUpdater:
+          Type: Api
+          Properties:
+            Path: /updateHomeWidgets
+            Method: post
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+  HomeWidgetDeleterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HomeWidgetDeleter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Events:
+        HomeWidgetDeleter:
+          Type: Api
+          Properties:
+            Path: /deleteHomeWidget/{id}
+            Method: delete
+            RestApiId: !Ref LinesApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
 Outputs:
   LinesReaderApi:
     Description: "API Gateway endpoint URL for Prod stage"
@@ -195,3 +256,15 @@ Outputs:
   CirclesUpdaterApi:
     Description: "API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateCircle"
+  CirclesFetcherApi:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/fetchCircles"
+  FetchUpdatesApi:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/fetchUpdates"
+  HomeWidgetsFetcherApi:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/fetchHomeWidgets"
+  HomeWidgetsUpdaterApi:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateHomeWidgets"
