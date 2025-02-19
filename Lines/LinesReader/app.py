@@ -72,7 +72,7 @@ def hide_private_lines(content, has_private_lines, requester_id, line_owner_id):
                 if not has_access:
                     item['insert'] = 'x' * len(item['insert'])
                 #We need to remove the privateLine attribute if user doesn't has access
-                if not has_access:
+                if not has_access and 'privateLine' in item['attributes']:
                     del item['attributes']['privateLine']
 
         # Convert the modified content back to JSON
