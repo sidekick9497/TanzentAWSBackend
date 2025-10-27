@@ -37,6 +37,8 @@ def lambda_handler(event, context):
             return {"statusCode": 404, "body": json.dumps({"message": "Line not found"})}
 
         # TODO: The line should belong to the current user first before deleting
+        if response["Item"]["userId"] != user_id:
+            return {"statusCode": 401, "body": json.dumps({"message": "Unauthorized access, the line does not belong to the current user"})}
         # Attempt to delete the item
         table.delete_item(Key={"lineId": line_id})
         logging.info(f"Line with lineId {line_id} successfully deleted")

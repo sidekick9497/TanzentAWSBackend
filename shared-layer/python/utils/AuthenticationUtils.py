@@ -11,16 +11,24 @@ def validate_token(event):
 
 
 def getUserId(event):
-    if os.environ.get("AWS_SAM_LOCAL"):
-        token = event.get('headers', {}).get('Authorization')
-        if token:
-            if token.startswith("Bearer "):
-                token = token[7:]
-            return token
-        return None
-    claims = event['requestContext']['authorizer']['claims']
+    print(event)
+    # Access claims through the JWT authorizer path
+    claims = event['requestContext']['authorizer']['jwt']['claims']
+
     # Extract the phone number from the claims
     phone_number = claims.get('phone_number', None)
+
+    # If phone_number is not directly available, check the firebase identities
+    if not phone_number and 'firebase' in claims:
+        try:
+            # The firebase field appears to be a string representation of a dict
+            import ast
+            firebase_data = ast.literal_eval(claims['firebase'])
+            if 'identities' in firebase_data and 'phone' in firebase_data['identities']:
+                phone_number = firebase_data['identities']['phone'][0]
+        except:
+            pass
+
     return phone_number
 
 

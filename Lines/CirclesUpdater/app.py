@@ -12,7 +12,7 @@ def lambda_handler(event, context):
     circleDb = dynamoDb.Table(configs.CIRCLES_TABLE_NAME)
     # Get the payload from event
     payload = json.loads(event['body'])
-    # Get the payload object from the event and create an Circles Item to be inserted into the DB
+    # Get the payload object from the event and create a Circles Item to be inserted into the DB
     circle = payload['circle']
     circle_name = circle['circleName']
     circle_quote = circle['quote']
@@ -38,7 +38,7 @@ def lambda_handler(event, context):
         print("Response is : ", response)
     except Exception as e:
         print(e)
-        return {"statusCode": 500, "body": json.dumps("Error reading items: " + str(e))}
+        return {"statusCode": 500, "body": json.dumps("Unable to update the circle: " + str(e))}
     return {
         "statusCode": 200,
         "body": json.dumps({"response": "success", "updatedAt": updated_at}),

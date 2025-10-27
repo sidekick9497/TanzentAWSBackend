@@ -1,7 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  Template for Tanzent backend application
+Description: Template for Tanzent backend application
 
 Globals:
   Function:
@@ -21,17 +20,69 @@ Resources:
       RetentionPolicy: Retain
 
   LinesApi:
-    Type: AWS::Serverless::Api
+    Type: AWS::Serverless::HttpApi
     Properties:
       StageName: Prod
-      Auth:
-        DefaultAuthorizer: CognitoAuthorizer
-        Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: arn:aws:cognito-idp:us-east-1:107207560024:userpool/us-east-1_bTOhp8YP9
-            IdentitySource: method.request.header.Authorization
-      TracingEnabled: false       # Disable tracing
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: Tanzent API
+        paths:
+          /line/{lineId}:
+            get:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /allLines/{userId}:
+            get:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /writer:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /fetchCircles:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /deleteLine/{lineId}:
+            delete:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /updateCircle:
+            put:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /fetchUpdates:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /fetchHomeWidgets:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /updateHomeWidgets:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /deleteHomeWidget/{id}:
+            delete:
+              security:
+                - FirebaseJWTAuthorizer: []
+        components:
+          securitySchemes:
+            FirebaseJWTAuthorizer:
+              type: http
+              scheme: bearer
+              bearerFormat: JWT
+              x-amazon-apigateway-authorizer:
+                type: jwt
+                jwtConfiguration:
+                  issuer: https://securetoken.google.com/tazent-backend
+                  audience:
+                    - tanzent-backend
+                identitySource: $request.header.Authorization
 
+  # Lambda Functions (without Events as they're now defined in the API)
   LinesReaderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -44,14 +95,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        LinesReader:
-          Type: Api
+        LinesApiGETlinelineId:
+          Type: HttpApi
           Properties:
             Path: /line/{lineId}
-            Method: get
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: GET
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   LinesReaderAllFunction:
     Type: AWS::Serverless::Function
@@ -65,14 +116,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        LinesReaderAll:
-          Type: Api
+        LinesApiGETallLinesuserId:
+          Type: HttpApi
           Properties:
             Path: /allLines/{userId}
-            Method: get
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: GET
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   LinesWriterFunction:
     Type: AWS::Serverless::Function
@@ -86,14 +137,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        LinesWriter:
-          Type: Api
+        LinesApiPOSTwriter:
+          Type: HttpApi
           Properties:
             Path: /writer
-            Method: post
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   CirclesFetcherFunction:
     Type: AWS::Serverless::Function
@@ -107,14 +158,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        CirclesFetcher:
-          Type: Api
+        LinesApiPOSTfetchCircles:
+          Type: HttpApi
           Properties:
             Path: /fetchCircles
-            Method: post
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   LinesDeleterFunction:
     Type: AWS::Serverless::Function
@@ -128,14 +179,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        LinesDeleter:
-          Type: Api
+        LinesApiDELETEdeleteLinelineId:
+          Type: HttpApi
           Properties:
             Path: /deleteLine/{lineId}
-            Method: delete
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: DELETE
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   CircleUpdaterFunction:
     Type: AWS::Serverless::Function
@@ -149,14 +200,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        CircleUpdater:
-          Type: Api
+        LinesApiPUTupdateCircle:
+          Type: HttpApi
           Properties:
             Path: /updateCircle
-            Method: put
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: PUT
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   FetchUpdatesFunction:
     Type: AWS::Serverless::Function
@@ -170,14 +221,14 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        FetchUpdates:
-          Type: Api
+        LinesApiPOSTfetchUpdates:
+          Type: HttpApi
           Properties:
             Path: /fetchUpdates
-            Method: post
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
   HomeWidgetsFetcherFunction:
     Type: AWS::Serverless::Function
@@ -191,14 +242,15 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        HomeWidgetsFetcher:
-          Type: Api
+        LinesApiPOSTfetchHomeWidgets:
+          Type: HttpApi
           Properties:
             Path: /fetchHomeWidgets
-            Method: post
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
   HomeWidgetsUpdaterFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -211,14 +263,15 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        HomeWidgetsUpdater:
-          Type: Api
+        LinesApiPOSTupdateHomeWidgets:
+          Type: HttpApi
           Properties:
             Path: /updateHomeWidgets
-            Method: post
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
   HomeWidgetDeleterFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -231,40 +284,16 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        HomeWidgetDeleter:
-          Type: Api
+        LinesApiDELETEdeleteHomeWidgetid:
+          Type: HttpApi
           Properties:
             Path: /deleteHomeWidget/{id}
-            Method: delete
-            RestApiId: !Ref LinesApi
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Method: DELETE
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
 
 Outputs:
-  LinesReaderApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/line/{lineId}"
-  LinesReaderAllApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/allLines/{userId}"
-  LinesWriterApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/writer"
-  LinesDeleterApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/deleteLine/{lineId}"
-  CirclesUpdaterApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateCircle"
-  CirclesFetcherApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/fetchCircles"
-  FetchUpdatesApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/fetchUpdates"
-  HomeWidgetsFetcherApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/fetchHomeWidgets"
-  HomeWidgetsUpdaterApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/updateHomeWidgets"
+  HttpApiUrl:
+    Description: HTTP API endpoint URL
+    Value: !Sub https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod
