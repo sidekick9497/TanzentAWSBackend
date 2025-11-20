@@ -1,5 +1,6 @@
 import json
 from _decimal import Decimal
+from datetime import datetime
 
 import boto3
 import os
@@ -21,44 +22,72 @@ def getDBConnection():
 
 
 def update_user_updated_at(user_id, updated_at):
+    """
+    DEPRECATED: This function is kept for backward compatibility.
+    The functionality has been merged into update_user_view_count and update_user_visitor_count.
+    """
     table = getDBConnection().Table(configs.CIRCLES_TABLE_NAME)
     table.update_item(
-        Key={
-            'circleId': user_id
-        },
+        Key={'circleId': user_id},
         UpdateExpression="set updatedAt = :val",
-        ExpressionAttributeValues={
-            ':val': updated_at
-        }
+        ExpressionAttributeValues={':val': updated_at}
     )
 
 
 def update_user_view_count(user_id):
+    """
+    Update the view count and last updated timestamp for a user in a single operation.
+    
+    Args:
+        user_id (str): The ID of the user to update
+        
+    Returns:
+        str: The ISO formatted timestamp when the update occurred
+    """
     table = getDBConnection().Table(configs.CIRCLES_TABLE_NAME)
+    now = int(datetime.now().timestamp() * 1_000)
+    
     table.update_item(
-        Key={
-            'circleId': user_id
-        },
-        UpdateExpression="set lineViews = if_not_exists(lineViews, :zero) + :one",
+        Key={'circleId': user_id},
+        UpdateExpression="""
+            SET lineViews = if_not_exists(lineViews, :zero) + :one,
+                updatedAt = :now
+        """,
         ExpressionAttributeValues={
             ':zero': 0,
-            ':one': 1
+            ':one': 1,
+            ':now': now
         }
     )
+    return now
 
 
 def update_user_visitor_count(user_id):
+    """
+    Update the visitor count and last updated timestamp for a user in a single operation.
+    
+    Args:
+        user_id (str): The ID of the user to update
+        
+    Returns:
+        str: The ISO formatted timestamp when the update occurred
+    """
     table = getDBConnection().Table(configs.CIRCLES_TABLE_NAME)
+    now = int(datetime.now().timestamp() * 1_000)
+    
     table.update_item(
-        Key={
-            'circleId': user_id
-        },
-        UpdateExpression="set visits = if_not_exists(visits, :zero) + :one",
+        Key={'circleId': user_id},
+        UpdateExpression="""
+            SET visits = if_not_exists(visits, :zero) + :one,
+                updatedAt = :now
+        """,
         ExpressionAttributeValues={
             ':zero': 0,
-            ':one': 1
+            ':one': 1,
+            ':now': now
         }
     )
+    return now
 
 
 class DecimalEncoder(json.JSONEncoder):

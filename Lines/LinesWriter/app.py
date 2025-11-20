@@ -3,10 +3,12 @@ import logging
 import uuid
 from datetime import time, datetime
 
-from models import Line
+from models import Line, LineVisibility
 from models import LineProperty
+from models.LineVisibility import isPrivate
 from utils import getDBConnection, getUserId
 from utils.dynamoDBUtils import update_user_updated_at
+from utils.EncryptionUtils import encrypt_text
 from values import configs
 
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +60,7 @@ def lambda_handler(event, context):
         is_line_present = 'line' in request_body
         is_properties_present = "lineProperties" in request_body
         user_id = getUserId(event)
+        visibility = LineVisibility.public
         if not is_line_present and not is_properties_present:
             logging.warning("invalid request body in the passed event")
             return {"statusCode": 400, "body": "Invalid request body"}
@@ -90,6 +93,8 @@ def lambda_handler(event, context):
         if is_properties_present:
             properties_object = request_body['lineProperties']
             content = properties_object['content']
+            if isPrivate(visibility):
+                content = encrypt_text(content)
             hide_on_read = properties_object['hideOnRead']
             delete_on_read = properties_object['deleteOnRead']
             contains_private_lines = properties_object['containsPrivateLines']

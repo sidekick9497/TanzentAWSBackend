@@ -1,0 +1,452 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Template for Tanzent backend application (stage-aware; DynamoDB included)
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    Description: Deployment stage (test, prod, etc.)
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+
+Resources:
+  SharedCodeLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "codeLayer-${Stage}"
+      Description: share code layer to be used for all Lines lambda functions
+      ContentUri: ../shared-layer/
+      CompatibleRuntimes:
+        - python3.9
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
+
+  LinesApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: Prod
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: TanzentAPI
+        paths:
+          /line/{lineId}:
+            get:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /allLines/{userId}:
+            get:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /writer:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /fetchCircles:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /deleteLine/{lineId}:
+            delete:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /updateCircle:
+            put:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /fetchUpdates:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /fetchHomeWidgets:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /updateHomeWidgets:
+            post:
+              security:
+                - FirebaseJWTAuthorizer: []
+          /deleteHomeWidget/{id}:
+            delete:
+              security:
+                - FirebaseJWTAuthorizer: []
+        components:
+          securitySchemes:
+            FirebaseJWTAuthorizer:
+              type: oauth2
+              x-amazon-apigateway-authorizer:
+                type: jwt
+                identitySource: $request.header.Authorization
+                jwtConfiguration:
+                  issuer: https://securetoken.google.com/tanzent-firebase
+                  audience:
+                    - tanzent-firebase
+
+  ####################################
+  # DynamoDB Tables (stage-aware)
+  ####################################
+
+  LinesDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "LinesDB-${Stage}"
+      BillingMode: PROVISIONED
+      AttributeDefinitions:
+        - AttributeName: lineId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: lineId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserId_Index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  LineProperty:
+    Type: AWS::DynamoDB::Table
+    DependsOn: LinesDB
+    Properties:
+      TableName: !Sub "LineProperty-${Stage}"
+      BillingMode: PROVISIONED
+      AttributeDefinitions:
+        - AttributeName: lineId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: lineId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  Circles:
+    Type: AWS::DynamoDB::Table
+    DependsOn: LineProperty
+    Properties:
+      TableName: !Sub "Circles-${Stage}"
+      BillingMode: PROVISIONED
+      AttributeDefinitions:
+        - AttributeName: circleId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: circleId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  HomeWidgets:
+    Type: AWS::DynamoDB::Table
+    DependsOn: Circles
+    Properties:
+      TableName: !Sub "HomeWidgets-${Stage}"
+      BillingMode: PROVISIONED
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserId_Index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ####################################
+  # Lambda functions (stage-aware table names via environment variables)
+  # Roles left as you provided them (existing role ARNs)
+  ####################################
+
+  LinesReaderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: LinesReader/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          LINES_TABLE_NAME: !Ref LinesDB
+          LINES_PROPERTY_TABLE_NAME: !Ref LineProperty
+          CIRCLES_TABLE_NAME: !Ref Circles
+      Events:
+        LinesApiGETlinelineId:
+          Type: HttpApi
+          Properties:
+            Path: /line/{lineId}
+            Method: GET
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  LinesReaderAllFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: LinesReaderAll/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          LINES_TABLE_NAME: !Ref LinesDB
+      Events:
+        LinesApiGETallLinesuserId:
+          Type: HttpApi
+          Properties:
+            Path: /allLines/{userId}
+            Method: GET
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  LinesWriterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: LinesWriter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          LINES_TABLE_NAME: !Ref LinesDB
+          LINES_PROPERTY_TABLE_NAME: !Ref LineProperty
+      Events:
+        LinesApiPOSTwriter:
+          Type: HttpApi
+          Properties:
+            Path: /writer
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  CirclesFetcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CirclesFetcher/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          CIRCLES_TABLE_NAME: !Ref Circles
+      Events:
+        LinesApiPOSTfetchCircles:
+          Type: HttpApi
+          Properties:
+            Path: /fetchCircles
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  LinesDeleterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: LinesDeleter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          LINES_TABLE_NAME: !Ref LinesDB
+      Events:
+        LinesApiDELETEdeleteLinelineId:
+          Type: HttpApi
+          Properties:
+            Path: /deleteLine/{lineId}
+            Method: DELETE
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  CircleUpdaterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CirclesUpdater/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          CIRCLES_TABLE_NAME: !Ref Circles
+      Events:
+        LinesApiPUTupdateCircle:
+          Type: HttpApi
+          Properties:
+            Path: /updateCircle
+            Method: PUT
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  FetchUpdatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: FetchUpdates/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          CIRCLES_TABLE_NAME: !Ref Circles
+          LINES_TABLE_NAME: !Ref LinesDB
+      Events:
+        LinesApiPOSTfetchUpdates:
+          Type: HttpApi
+          Properties:
+            Path: /fetchUpdates
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  HomeWidgetsFetcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HomeWidgetsFetcher/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
+      Events:
+        LinesApiPOSTfetchHomeWidgets:
+          Type: HttpApi
+          Properties:
+            Path: /fetchHomeWidgets
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  HomeWidgetsUpdaterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HomeWidgetsUpdater/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
+      Events:
+        LinesApiPOSTupdateHomeWidgets:
+          Type: HttpApi
+          Properties:
+            Path: /updateHomeWidgets
+            Method: POST
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+  HomeWidgetDeleterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HomeWidgetDeleter/
+      Handler: app.lambda_handler
+      Layers:
+        - !Ref SharedCodeLayer
+      Runtime: python3.9
+      Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
+      Events:
+        LinesApiDELETEdeleteHomeWidgetid:
+          Type: HttpApi
+          Properties:
+            Path: /deleteHomeWidget/{id}
+            Method: DELETE
+            ApiId: !Ref LinesApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+
+Outputs:
+  HttpApiUrl:
+    Description: HTTP API endpoint URL
+    Value: !Sub "https://${LinesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  LinesTableName:
+    Description: DynamoDB table name for lines (stage)
+    Value: !Ref LinesDB
+  LinePropertyTableName:
+    Description: DynamoDB LineProperty table name
+    Value: !Ref LineProperty
+  CirclesTableName:
+    Description: DynamoDB Circles table name
+    Value: !Ref Circles
+  HomeWidgetsTableName:
+    Description: DynamoDB HomeWidgets table name
+    Value: !Ref HomeWidgets

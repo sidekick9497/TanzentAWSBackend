@@ -1,7 +1,8 @@
 import json
 
 from models import Line, LineProperty, PrivateLines
-from utils import getDBConnection, getUserId
+from models.LineVisibility import isPrivate
+from utils import getDBConnection, getUserId, decrypt_text
 from utils.dynamoDBUtils import update_user_view_count
 from values import configs
 
@@ -38,6 +39,8 @@ def lambda_handler(event, context):
         line_properties = lines_properties_db_response["Item"]
         print("Line properties: ", line_properties)
         content = line_properties["content"]
+        if isPrivate(line["visibility"]):
+            content = decrypt_text(content)
         updated_content = hide_private_lines(content, line_properties['containsPrivateLines'], user_id, line["userId"])
         if user_id != line["userId"]:
             update_user_view_count(line["userId"])
