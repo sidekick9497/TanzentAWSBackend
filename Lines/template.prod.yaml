@@ -12,6 +12,12 @@ Globals:
   Function:
     Timeout: 10
     MemorySize: 128
+    Environment:
+      Variables:
+        CIRCLES_TABLE_NAME: !Ref Circles
+        LINES_TABLE_NAME: !Ref LinesDB
+        LINES_PROPERTY_TABLE_NAME: !Ref LineProperty
+        HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
 
 Resources:
   SharedCodeLayer:
@@ -201,11 +207,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          LINES_TABLE_NAME: !Ref LinesDB
-          LINES_PROPERTY_TABLE_NAME: !Ref LineProperty
-          CIRCLES_TABLE_NAME: !Ref Circles
       Events:
         LinesApiGETlinelineId:
           Type: HttpApi
@@ -227,9 +228,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          LINES_TABLE_NAME: !Ref LinesDB
       Events:
         LinesApiGETallLinesuserId:
           Type: HttpApi
@@ -251,10 +249,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          LINES_TABLE_NAME: !Ref LinesDB
-          LINES_PROPERTY_TABLE_NAME: !Ref LineProperty
       Events:
         LinesApiPOSTwriter:
           Type: HttpApi
@@ -276,9 +270,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          CIRCLES_TABLE_NAME: !Ref Circles
       Events:
         LinesApiPOSTfetchCircles:
           Type: HttpApi
@@ -300,9 +291,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          LINES_TABLE_NAME: !Ref LinesDB
       Events:
         LinesApiDELETEdeleteLinelineId:
           Type: HttpApi
@@ -324,9 +312,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          CIRCLES_TABLE_NAME: !Ref Circles
       Events:
         LinesApiPUTupdateCircle:
           Type: HttpApi
@@ -348,10 +333,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          CIRCLES_TABLE_NAME: !Ref Circles
-          LINES_TABLE_NAME: !Ref LinesDB
       Events:
         LinesApiPOSTfetchUpdates:
           Type: HttpApi
@@ -373,9 +354,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
       Events:
         LinesApiPOSTfetchHomeWidgets:
           Type: HttpApi
@@ -397,9 +375,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
       Events:
         LinesApiPOSTupdateHomeWidgets:
           Type: HttpApi
@@ -421,9 +396,6 @@ Resources:
       Role: arn:aws:iam::107207560024:role/TanzentLambdaRole
       Architectures:
         - x86_64
-      Environment:
-        Variables:
-          HOME_WIDGETS_TABLE_NAME: !Ref HomeWidgets
       Events:
         LinesApiDELETEdeleteHomeWidgetid:
           Type: HttpApi

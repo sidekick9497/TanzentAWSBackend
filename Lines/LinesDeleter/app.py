@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 
 from models import Line, PrivateLines, LineProperty
+from models.LineVisibility import get_db_mapped_visibility
 from utils import getDBConnection, getUserId
 from utils.dynamoDBUtils import update_user_updated_at
 from values import configs
@@ -20,32 +21,46 @@ def lambda_handler(event, context):
     dynamodb = getDBConnection()
 
     try:
-        # Check if lineId is present in the path parameters
         if "pathParameters" not in event or "lineId" not in event["pathParameters"]:
-            logging.error("Missing lineId in path parameters")
             return {"statusCode": 400, "body": json.dumps({"message": "Missing lineId in path parameters"})}
+
         user_id = getUserId(event)
         line_id = event["pathParameters"]["lineId"]
-        logging.info(f"{line_id} is sent for deletion")
 
         table = dynamodb.Table(configs.LINES_TABLE_NAME)
-
-        # Check if the item exists before attempting to delete
         response = table.get_item(Key={"lineId": line_id})
+
         if "Item" not in response:
-            logging.warning(f"Line with lineId {line_id} not found")
             return {"statusCode": 404, "body": json.dumps({"message": "Line not found"})}
 
         if response["Item"]["userId"] != user_id:
-            return {"statusCode": 401, "body": json.dumps({"message": "Unauthorized access, the line does not belong to the current user"})}
-        # Attempt to delete the item
+            return {"statusCode": 401, "body": json.dumps({"message": "Unauthorized access"})}
+
+        # --- Update counters BEFORE delete ---
+        visibility = response["Item"]["visibility"]
+        db_mapped_visibility = get_db_mapped_visibility(visibility)
+        user_table = dynamodb.Table(configs.CIRCLES_TABLE_NAME)
+
+        inc_map = {
+            "totalLines": -1,
+            f"{db_mapped_visibility}Lines": -1
+        }
+
+        expr = "ADD " + ", ".join(f"{k} :{k}" for k in inc_map)
+        values = {f":{k}": v for k, v in inc_map.items()}
+
+        user_table.update_item(
+            Key={"circleId": user_id},
+            UpdateExpression=expr,
+            ExpressionAttributeValues=values
+        )
+        # --- End counter update ---
+
         table.delete_item(Key={"lineId": line_id})
-        logging.info(f"Line with lineId {line_id} successfully deleted")
+
         update_user_updated_at(user_id, int(datetime.utcnow().timestamp() * 1_000))
 
-        # Return a success response with the lineId
         return {"statusCode": 200, "body": json.dumps({line_id: "deleted"})}
 
     except Exception as e:
-        logging.error(f"Error deleting item: {str(e)}", exc_info=True)
         return {"statusCode": 500, "body": json.dumps({"message": "Error deleting item", "error": str(e)})}

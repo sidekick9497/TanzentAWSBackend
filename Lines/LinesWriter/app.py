@@ -7,7 +7,7 @@ from models import Line, LineVisibility
 from models import LineProperty
 from models.LineVisibility import isPrivate
 from utils import getDBConnection, getUserId
-from utils.dynamoDBUtils import update_user_updated_at
+from utils.dynamoDBUtils import update_user_updated_at, update_user_line_counters
 from utils.EncryptionUtils import encrypt_text
 from values import configs
 
@@ -52,11 +52,10 @@ def lambda_handler(event, context):
     dynamodb = getDBConnection()
 
     try:
-
+        is_update = False
         line_id = None
         saved_line = None
         request_body = json.loads(event['body'])
-        print(request_body)
         is_line_present = 'line' in request_body
         is_properties_present = "lineProperties" in request_body
         user_id = getUserId(event)
@@ -79,6 +78,7 @@ def lambda_handler(event, context):
                 line_id = str(uuid.uuid4())
             else:
                 line_id = line['lineId']
+                is_update = True
             shared_to = []
             if "sharedTo" in line:
                 shared_to = (line['sharedTo'])
@@ -110,6 +110,7 @@ def lambda_handler(event, context):
             print("savedProperties: ", str(line_properties))
 
         update_user_updated_at(user_id, int(datetime.utcnow().timestamp() * 1_000))
+        update_user_line_counters(user_id, is_update, line_id, visibility)
 
         return {"statusCode": 200, "body": json.dumps(line_id)}
     except Exception as e:
